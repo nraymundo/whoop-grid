@@ -16,9 +16,7 @@ in a format that is intuitive, compact, and easy to explore.
   - Strain
 - Daily heatmap layout (GitHub-style)
 - Hover tooltips with detailed values
-- Supports 6+ months of historical data
 - Designed for WHOOP API integration
-- Responsive layout for desktop and mobile
 
 ---
 
@@ -27,8 +25,6 @@ in a format that is intuitive, compact, and easy to explore.
 - **Framework:** Next.js (App Router) + TypeScript
 - **Styling:** Tailwind CSS
 - **Data Source:** WHOOP API (OAuth2 authentication)
-- **Deployment (planned):** Vercel / Netlify
-- **Database (optional):** PostgreSQL / Supabase (future)
 
 ---
 
@@ -36,7 +32,7 @@ in a format that is intuitive, compact, and easy to explore.
 
 **Effective Date:** 2025-12-02
 
-WHOOP Daily Grid ("the App") is a personal fitness data visualization project designed
+WHOOP Grid is a personal fitness data visualization project designed
 to help users understand their recovery, sleep, and activity trends using WHOOP data.
 
 We take your privacy seriously.
