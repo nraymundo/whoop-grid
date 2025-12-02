@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
 
-  console.log("WHOOP CALLBACK URL:", url.toString());
-
   const code = url.searchParams.get("code");
 
   if (!code) {
@@ -19,9 +17,9 @@ export async function GET(req: NextRequest) {
 
   const clientId = process.env.WHOOP_CLIENT_ID!;
   const clientSecret = process.env.WHOOP_CLIENT_SECRET!;
-  const redirectUri = "http://localhost:3000/api/auth/whoop/callback";
+  const redirectUri = process.env.WHOOP_REDIRECT_URI!;
 
-  const tokenRes = await fetch(
+  const tokenResponse = await fetch(
     "https://api.prod.whoop.com/oauth/oauth2/token",
     {
       method: "POST",
@@ -38,26 +36,28 @@ export async function GET(req: NextRequest) {
     }
   );
 
-  const tokenRaw = await tokenRes.text();
+  const tokenRaw = await tokenResponse.text();
   let tokenData: any = null;
 
   try {
     tokenData = JSON.parse(tokenRaw);
   } catch {
-    console.error("WHOOP TOKEN NON-JSON RESPONSE:", tokenRes.status, tokenRaw);
+    console.error(
+      "WHOOP TOKEN NON-JSON RESPONSE:",
+      tokenResponse.status,
+      tokenRaw
+    );
     return NextResponse.json(
       {
         error: "Token response was not JSON",
-        status: tokenRes.status,
+        status: tokenResponse.status,
         raw: tokenRaw,
       },
       { status: 400 }
     );
   }
 
-  console.log("WHOOP TOKENS RESPONSE:", tokenData);
-
-  if (!tokenRes.ok) {
+  if (!tokenResponse.ok) {
     return NextResponse.json(
       { error: "Token exchange failed", details: tokenData },
       { status: 400 }
@@ -75,9 +75,9 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const res = NextResponse.redirect(new URL("/", req.url));
+  const response = NextResponse.redirect(new URL("/", req.url));
 
-  res.cookies.set("whoop_access_token", accessToken, {
+  response.cookies.set("whoop_access_token", accessToken, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
   });
 
   if (refreshToken) {
-    res.cookies.set("whoop_refresh_token", refreshToken, {
+    response.cookies.set("whoop_refresh_token", refreshToken, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",
@@ -93,5 +93,5 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return res;
+  return response;
 }

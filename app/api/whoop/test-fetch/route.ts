@@ -1,4 +1,3 @@
-// app/api/whoop/test-fetch/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -17,22 +16,20 @@ export async function GET(req: NextRequest) {
   const url = new URL("https://api.prod.whoop.com/developer/v2/recovery");
   url.searchParams.set("limit", "5");
 
-  const res = await fetch(url.toString(), {
+  const response = await fetch(url.toString(), {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/json",
     },
   });
 
-  const status = res.status;
-  const raw = await res.text();
+  const status = response.status;
+  const raw = await response.text();
 
   let parsed: any = null;
   try {
     parsed = JSON.parse(raw);
-  } catch {
-    // non-JSON is fine, we'll surface it
-  }
+  } catch {}
 
   console.log("WHOOP TEST-FETCH RESPONSE STATUS:", status);
   console.log("WHOOP TEST-FETCH RAW BODY:", raw);

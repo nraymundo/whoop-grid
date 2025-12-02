@@ -15,7 +15,6 @@ export function generateMockMetrics(days: number = 180): DailyMetrics[] {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
 
-    // Fake but plausible WHOOP-like values
     const recoveryBase = 50 + 40 * Math.sin(i / 10);
     const sleepPerfBase = 80 + 15 * Math.cos(i / 13);
     const strainBase = 10 + 5 * Math.sin(i / 7);
@@ -38,7 +37,6 @@ export function generateMockMetrics(days: number = 180): DailyMetrics[] {
 }
 
 function randomNoise(sd: number): number {
-  // Simple Gaussian-style noise via Box-Muller
   const u = 1 - Math.random();
   const v = 1 - Math.random();
   const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);

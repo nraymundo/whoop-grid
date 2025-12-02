@@ -2,11 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const clientId = process.env.WHOOP_CLIENT_ID!;
-  const redirectUri = "http://localhost:3000/api/auth/whoop/callback";
-
-  console.log("WHOOP LOGIN ROUTE HIT");
-  console.log("CLIENT ID:", clientId);
-  console.log("REDIRECT URI (HARD-CODED):", redirectUri);
+  const redirectUri = process.env.WHOOP_REDIRECT_URI!;
 
   const state =
     Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
@@ -22,15 +18,13 @@ export async function GET() {
     "offline read:profile read:recovery read:sleep read:workout read:cycles"
   );
 
-  console.log("AUTH URL:", authUrl.toString());
-
-  const res = NextResponse.redirect(authUrl.toString());
-  res.cookies.set("whoop_oauth_state", state, {
+  const response = NextResponse.redirect(authUrl.toString());
+  response.cookies.set("whoop_oauth_state", state, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
     maxAge: 10 * 60,
   });
 
-  return res;
+  return response;
 }

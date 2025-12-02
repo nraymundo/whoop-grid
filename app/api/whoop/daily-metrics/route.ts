@@ -22,61 +22,52 @@ export async function GET(req: NextRequest) {
   const end = new Date();
   const start = new Date(end.getTime() - (days - 1) * DAY_MS);
 
+  // normalize day boundaries
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
+
   const startIso = start.toISOString();
   const endIso = end.toISOString();
 
-  // 🔹 helper to fetch all recovery pages (25 at a time)
-  async function fetchAllRecovery(
+  async function fetchAllPaginated(
     baseUrl: string,
     headers: Record<string, string>,
+    label: string,
     maxPages = 10
   ) {
     let all: any[] = [];
     let page = 0;
-    let nextToken: string | null = null;
+    let nextToken: string | undefined;
 
     while (page < maxPages) {
       const url = new URL(baseUrl);
 
-      // Dates + limit stay in baseUrl; we only add pagination token
       if (nextToken) {
-        // Try both param names in case WHOOP expects one or the other
+        // WHOOP expects nextToken as the query param
         url.searchParams.set("nextToken", nextToken);
-        url.searchParams.set("next_token", nextToken);
       }
 
-      const res = await fetch(url.toString(), { headers });
-      const raw = await res.text();
+      const response = await fetch(url.toString(), { headers });
+      const raw = await response.text();
 
       let json: any;
       try {
         json = JSON.parse(raw);
       } catch {
-        console.error("Recovery non-JSON:", res.status, raw);
+        console.error(`[${label}] non-JSON`, response.status, raw);
         break;
       }
 
-      if (!res.ok) {
-        console.error("Recovery page error:", res.status, json);
+      if (!response.ok) {
+        console.error(`[${label}] page error`, response.status, json);
         break;
       }
 
       const records = json.records ?? [];
-      const newToken: string | undefined =
-        json.nextToken ?? json.next_token ?? undefined;
-
-      console.log(
-        "[recovery] page",
-        page,
-        "records:",
-        records.length,
-        "nextToken:",
-        newToken
-      );
+      const newToken: string | undefined = json.next_token ?? undefined;
 
       all = all.concat(records);
 
-      // Stop if no more pages or token didn't change
       if (!newToken || newToken === nextToken) {
         break;
       }
@@ -88,68 +79,46 @@ export async function GET(req: NextRequest) {
     return all;
   }
 
-  // 🔹 Build URLs for all three endpoints
+  // --- Build URLs for all three endpoints ---
   const recoveryBaseUrl =
     `https://api.prod.whoop.com/developer/v2/recovery` +
     `?start=${encodeURIComponent(startIso)}` +
     `&end=${encodeURIComponent(endIso)}` +
     `&limit=25`;
 
-  const sleepUrl = new URL(
-    "https://api.prod.whoop.com/developer/v2/activity/sleep"
-  );
-  sleepUrl.searchParams.set("start", startIso);
-  sleepUrl.searchParams.set("end", endIso);
-  sleepUrl.searchParams.set("limit", "25");
+  const sleepBaseUrl =
+    `https://api.prod.whoop.com/developer/v2/activity/sleep` +
+    `?start=${encodeURIComponent(startIso)}` +
+    `&end=${encodeURIComponent(endIso)}` +
+    `&limit=25`;
 
-  const cycleUrl = new URL("https://api.prod.whoop.com/developer/v2/cycle");
-  cycleUrl.searchParams.set("start", startIso);
-  cycleUrl.searchParams.set("end", endIso);
-  cycleUrl.searchParams.set("limit", "25");
+  const cycleBaseUrl =
+    `https://api.prod.whoop.com/developer/v2/cycle` +
+    `?start=${encodeURIComponent(startIso)}` +
+    `&end=${encodeURIComponent(endIso)}` +
+    `&limit=25`;
 
   const headers = {
     Authorization: `Bearer ${accessToken}`,
     Accept: "application/json",
   };
 
-  // 🔹 Use pagination for recovery, normal fetch for sleep/cycle
-  const [recoveryRecords, sleepRes, cycleRes] = await Promise.all([
-    fetchAllRecovery(recoveryBaseUrl, headers),
-    fetch(sleepUrl.toString(), { headers }),
-    fetch(cycleUrl.toString(), { headers }),
+  // one helper, three endpoints (recovery, sleep, strain)
+  const [recoveryRecords, sleepRecords, cycleRecords] = await Promise.all([
+    fetchAllPaginated(recoveryBaseUrl, headers, "recovery"),
+    fetchAllPaginated(sleepBaseUrl, headers, "sleep"),
+    fetchAllPaginated(cycleBaseUrl, headers, "cycle"),
   ]);
 
-  const [sleepRaw, cycleRaw] = await Promise.all([
-    sleepRes.text(),
-    cycleRes.text(),
-  ]);
-
-  let sleepJson: any = null;
-  let cycleJson: any = null;
-
-  try {
-    sleepJson = JSON.parse(sleepRaw);
-  } catch {}
-  try {
-    cycleJson = JSON.parse(cycleRaw);
-  } catch {}
-
-  if (!sleepRes.ok) {
-    console.error("WHOOP sleep error:", sleepRes.status, sleepRaw);
-  }
-  if (!cycleRes.ok) {
-    console.error("WHOOP cycle error:", cycleRes.status, cycleRaw);
+  if (cycleRecords.length) {
+    console.log(cycleRecords[0]);
+    const starts = cycleRecords
+      .map((cycle) => cycle.start)
+      .filter(Boolean)
+      .map((t: string) => new Date(t).toISOString())
+      .sort();
   }
 
-  console.log("recoveryRecords:", recoveryRecords[0]);
-  console.log("recoveryRecords:", recoveryRecords[30]);
-  console.log("recoveryRecords:", recoveryRecords[50]);
-
-  // Basic defensive check
-  const sleepRecords: any[] = sleepJson?.records ?? [];
-  const cycleRecords: any[] = cycleJson?.records ?? [];
-
-  // Map WHOOP data into a date → metrics map
   const byDate = new Map<string, DailyMetrics>();
 
   const upsert = (date: string): DailyMetrics => {
@@ -166,50 +135,48 @@ export async function GET(req: NextRequest) {
     return blank;
   };
 
-  // 🔹 Recovery: now uses `recoveryRecords` directly (already paginated)
+  // Recovery
   for (const recovery of recoveryRecords) {
     const timestamp = recovery.created_at;
     if (!timestamp) continue;
     const dateKey = timestamp.slice(0, 10);
-    const m = upsert(dateKey);
+    const metric = upsert(dateKey);
     const score = recovery.score?.recovery_score ?? null;
     if (typeof score === "number") {
-      m.recovery = score;
+      metric.recovery = score;
     }
   }
 
-  // Sleep: use sleep performance % and hours if available
-  for (const s of sleepRecords) {
-    const ts = s?.start || s?.timestamp || s?.created_at;
-    if (!ts) continue;
-    const dateKey = ts.slice(0, 10);
-    const m = upsert(dateKey);
+  // Sleep
+  for (const sleep of sleepRecords) {
+    const start = sleep?.start;
+    if (!start) continue;
+    const dateKey = start.slice(0, 10);
+    const metric = upsert(dateKey);
 
-    const perf =
-      s?.score?.sleep_performance_percentage ??
-      s?.sleep_performance_percentage ??
-      null;
-    const durationSec = s?.score?.sleep_duration || s?.sleep_duration || null;
+    const performance = sleep?.score?.sleep_performance_percentage ?? null;
+    const duration =
+      sleep?.score?.stage_summary?.total_in_bed_time_milli -
+        sleep?.score?.stage_summary?.total_awake_time_milli || null;
 
-    if (typeof perf === "number") {
-      m.sleepPerformance = perf;
+    if (typeof performance === "number") {
+      metric.sleepPerformance = performance;
     }
-    if (typeof durationSec === "number") {
-      m.sleepHours = durationSec / 3600;
+    if (typeof duration === "number") {
+      metric.sleepHours = duration / 3600;
     }
   }
 
-  // Cycle: use strain (0–21)
-  for (const c of cycleRecords) {
-    const ts = c?.start || c?.timestamp || c?.created_at;
-    if (!ts) continue;
-    const dateKey = ts.slice(0, 10);
-    const m = upsert(dateKey);
+  // Cycle (strain)
+  for (const cycle of cycleRecords) {
+    const start = cycle?.start;
+    if (!start) continue;
+    const dateKey = start.slice(0, 10);
+    const metric = upsert(dateKey);
 
-    const strain = c?.score?.strain ?? c?.strain ?? null;
-
+    const strain = cycle?.score?.strain ?? null;
     if (typeof strain === "number") {
-      m.strain = strain;
+      metric.strain = strain;
     }
   }
 
@@ -218,14 +185,14 @@ export async function GET(req: NextRequest) {
   const cursor = new Date(start);
   while (cursor <= end) {
     const key = cursor.toISOString().slice(0, 10);
-    const m = byDate.get(key) ?? {
+    const metric = byDate.get(key) ?? {
       date: key,
       recovery: null,
       sleepPerformance: null,
       strain: null,
       sleepHours: null,
     };
-    daily.push(m);
+    daily.push(metric);
     cursor.setDate(cursor.getDate() + 1);
   }
 
