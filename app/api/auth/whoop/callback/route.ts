@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
 
+  console.log("WHOOP CALLBACK URL:", url.toString());
+
   const code = url.searchParams.get("code");
 
   if (!code) {
