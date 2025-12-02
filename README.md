@@ -1,6 +1,6 @@
 # WHOOP Grid
 
-A personal fitness dashboard that visualizes WHOOP recovery, sleep, and activity data
+A dashboard that visualizes WHOOP recovery, sleep, and activity data
 using GitHub-style calendar heatmaps.
 
 This app helps you quickly see trends in recovery, sleep, and strain over time
