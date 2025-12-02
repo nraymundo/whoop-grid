@@ -5,13 +5,15 @@ import { HeatmapGrid } from "./components/HeatmapGrid";
 import { generateMockMetrics } from "./lib/mockData";
 import { DailyMetrics } from "./lib/types";
 
+const RANGE_OPTIONS = [7, 30, 60];
+
 export default function HomePage() {
   const [data, setData] = useState<DailyMetrics[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [rangeDays, setRangeDays] = useState<number>(30);
 
-  // Always have mock data available as fallback
-  const mock = generateMockMetrics(180);
+  const mock = generateMockMetrics(rangeDays);
   const metrics = data ?? mock;
   const usingMock = data === null;
 
@@ -21,9 +23,8 @@ export default function HomePage() {
         setLoading(true);
         setErrorMsg(null);
 
-        const res = await fetch("/api/whoop/daily-metrics?days=180", {
+        const res = await fetch(`/api/whoop/daily-metrics?days=${rangeDays}`, {
           method: "GET",
-          // same-origin fetch automatically sends cookies
         });
 
         if (!res.ok) {
@@ -46,7 +47,7 @@ export default function HomePage() {
     };
 
     fetchMetrics();
-  }, []);
+  }, [rangeDays]);
 
   return (
     <main className="min-h-screen bg-white text-gray-900">
@@ -81,21 +82,32 @@ export default function HomePage() {
         </header>
 
         <div className="space-y-6">
+          {/* Recovery – with range dropdown */}
           <HeatmapGrid
             title="Recovery"
             data={metrics}
             metric="recovery"
             unit="%"
+            rangeDays={rangeDays}
+            onRangeChange={setRangeDays}
+            showRangeControl
           />
 
+          {/* Sleep & Strain – same data/range, no dropdown */}
           <HeatmapGrid
             title="Sleep Performance"
             data={metrics}
             metric="sleepPerformance"
             unit="%"
+            rangeDays={rangeDays}
           />
 
-          <HeatmapGrid title="Strain" data={metrics} metric="strain" />
+          <HeatmapGrid
+            title="Strain"
+            data={metrics}
+            metric="strain"
+            rangeDays={rangeDays}
+          />
         </div>
       </div>
     </main>
