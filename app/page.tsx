@@ -5,13 +5,13 @@ import { HeatmapGrid } from "./components/HeatmapGrid";
 import { generateMockMetrics } from "./lib/mockData";
 import { DailyMetrics } from "./lib/types";
 
-const RANGE_OPTIONS = [7, 30, 60];
+// const RANGE_OPTIONS = [7, 30, 60];
 
 export default function HomePage() {
   const [data, setData] = useState<DailyMetrics[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [rangeDays, setRangeDays] = useState<number>(30);
+  const [rangeDays, setRangeDays] = useState<number>(365);
 
   const mock = generateMockMetrics(rangeDays);
   const metrics = data ?? mock;
@@ -50,13 +50,13 @@ export default function HomePage() {
   }, [rangeDays]);
 
   return (
-    <main className="min-h-screen bg-white text-gray-900">
+    <main className="min-h-screen text-gray-900">
       <div className="mx-auto max-w-5xl px-4 py-8 space-y-8">
         <header className="space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-1">
-              <h1 className="text-2xl font-bold">WHOOP Daily Grid</h1>
-              <p className="text-sm text-gray-600 max-w-xl">
+              <h1 className="text-2xl font-bold text-white">WHOOP Grid</h1>
+              <p className="text-sm text-[#b4b4b4] max-w-xl">
                 GitHub-style calendar heatmaps for your WHOOP metrics. Connect
                 your WHOOP account to see real recovery, sleep, and strain data.
               </p>
@@ -81,33 +81,37 @@ export default function HomePage() {
           )}
         </header>
 
-        <div className="space-y-6">
-          {/* Recovery – with range dropdown */}
-          <HeatmapGrid
-            title="Recovery"
-            data={metrics}
-            metric="recovery"
-            unit="%"
-            rangeDays={rangeDays}
-            onRangeChange={setRangeDays}
-            showRangeControl
-          />
+        <div className="flex justify-center">
+          <div className="space-y-6">
+            <div className="space-y-6">
+              {/* Recovery – with range dropdown */}
+              <HeatmapGrid
+                title="Recovery"
+                data={metrics}
+                metric="recovery"
+                unit="%"
+                rangeDays={rangeDays}
+                onRangeChange={setRangeDays}
+                showRangeControl
+              />
 
-          {/* Sleep & Strain – same data/range, no dropdown */}
-          <HeatmapGrid
-            title="Sleep Performance"
-            data={metrics}
-            metric="sleepPerformance"
-            unit="%"
-            rangeDays={rangeDays}
-          />
+              {/* Sleep & Strain – same data/range, no dropdown */}
+              <HeatmapGrid
+                title="Sleep Performance"
+                data={metrics}
+                metric="sleepPerformance"
+                unit="%"
+                rangeDays={rangeDays}
+              />
 
-          <HeatmapGrid
-            title="Strain"
-            data={metrics}
-            metric="strain"
-            rangeDays={rangeDays}
-          />
+              <HeatmapGrid
+                title="Strain"
+                data={metrics}
+                metric="strain"
+                rangeDays={rangeDays}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </main>

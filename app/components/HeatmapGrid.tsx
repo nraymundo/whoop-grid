@@ -103,7 +103,7 @@ export function HeatmapGrid({
   const weekCount =
     cells.length > 0 ? Math.max(...cells.map((cell) => cell.weekIndex)) + 1 : 0;
 
-  const monthLabels = computeMonthLabels(firstDateStr, firstWeekday, weekCount);
+  const monthLabels = computeMonthLabelsFromCells(cells);
 
   const cellMap = new Map<string, (typeof cells)[0]>();
 
@@ -114,48 +114,50 @@ export function HeatmapGrid({
   return (
     <section className="space-y-2">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <h2 className="text-xl font-semibold text-white">{title}</h2>
 
-        {showRangeControl && onRangeChange && (
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+        {/* {showRangeControl && onRangeChange && (
+          <div className="flex items-center gap-2 text-xs text-[#b4b4b4]">
             <span>Range:</span>
             <select
               value={rangeDays}
               onChange={(e) => onRangeChange(Number(e.target.value))}
-              className="rounded border border-gray-300 bg-white px-2 py-1 text-xs"
+              className="rounded border border-[#26333A] bg-[#26333A] px-2 py-1 text-xs text-white"
             >
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>
               <option value={60}>Last 60 days</option>
             </select>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Month labels row */}
       <div className="flex gap-2">
         <div style={{ width: 28 }} />
-        <div
-          className="grid flex-1 text-[10px] text-gray-500 mb-1"
-          style={{
-            gridTemplateColumns: `repeat(${weekCount}, minmax(10px, 1fr))`,
-          }}
-        >
-          {monthLabels.map((label, weekIndex) => (
-            <div key={weekIndex} className="text-center">
-              {label}
-            </div>
-          ))}
+        <div className="flex-1">
+          <div
+            className="grid gap-[2px] mx-auto text-[12px] text-[#b4b4b4] mb-1"
+            style={{
+              gridTemplateColumns: `repeat(${weekCount}, 16px)`,
+            }}
+          >
+            {monthLabels.map((label, weekIndex) => (
+              <div key={weekIndex} className="text-center">
+                {label}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Weekday labels + heatmap grid */}
       <div className="flex gap-2">
         <div
-          className="grid gap-[2px] text-[10px] text-gray-500"
+          className="grid gap-[2px] text-[12px] text-[#b4b4b4]"
           style={{
             width: 28,
-            gridTemplateRows: "repeat(7, 12px)",
+            gridTemplateRows: "repeat(7, 16px)",
           }}
         >
           {["Sun", "", "Tue", "", "Thu", "", "Sat"].map((label, i) => (
@@ -167,41 +169,43 @@ export function HeatmapGrid({
 
         {/* Heatmap */}
         <div className="flex-1 overflow-x-auto">
-          <div
-            className="grid gap-[2px]"
-            style={{
-              gridTemplateColumns: `repeat(${weekCount}, minmax(10px, 1fr))`,
-              gridTemplateRows: "repeat(7, 12px)",
-            }}
-          >
-            {Array.from({ length: weekCount }).map((_, week) =>
-              Array.from({ length: 7 }).map((_, weekday) => {
-                const key = `${week}-${weekday}`;
-                const cell = cellMap.get(key);
-                return (
-                  <div
-                    key={key}
-                    className="rounded-sm"
-                    style={{
-                      gridColumnStart: week + 1,
-                      gridRowStart: weekday + 1,
-                      backgroundColor: cell
-                        ? valueToColor(cell.raw, metric)
-                        : "#E5E7EB",
-                    }}
-                    title={
-                      cell ? tooltipForCell(cell, metric, unit) : "No data"
-                    }
-                  />
-                );
-              })
-            )}
+          <div className="w-full">
+            <div
+              className="grid gap-[2px] mx-auto"
+              style={{
+                gridTemplateColumns: `repeat(${weekCount}, 16px)`,
+                gridTemplateRows: "repeat(7, 16px)",
+              }}
+            >
+              {Array.from({ length: weekCount }).map((_, week) =>
+                Array.from({ length: 7 }).map((_, weekday) => {
+                  const key = `${week}-${weekday}`;
+                  const cell = cellMap.get(key);
+                  return (
+                    <div
+                      key={key}
+                      className="rounded-sm"
+                      style={{
+                        gridColumnStart: week + 1,
+                        gridRowStart: weekday + 1,
+                        backgroundColor: cell
+                          ? valueToColor(cell.raw, metric)
+                          : "#E5E7EB",
+                      }}
+                      title={
+                        cell ? tooltipForCell(cell, metric, unit) : "No data"
+                      }
+                    />
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-1 text-[10px] text-gray-500">
+      <div className="flex items-center gap-1 text-[12px] text-[#b4b4b4]">
         <span>Low</span>
         {metric === "strain"
           ? ["Low", "Mid", "High"].map((_, i) => (
@@ -234,33 +238,40 @@ export function HeatmapGrid({
   );
 }
 
-function computeMonthLabels(
-  firstDateStr: string,
-  firstWeekday: number,
-  weekCount: number
+function computeMonthLabelsFromCells(
+  cells: {
+    date: string;
+    weekIndex: number;
+  }[]
 ): string[] {
-  const labels: string[] = [];
-  const firstDate = new Date(firstDateStr + "T00:00:00");
+  if (cells.length === 0) return [];
 
-  for (let w = 0; w < weekCount; w++) {
-    const dayIndex = w * 7 - firstWeekday;
-    if (dayIndex < 0) {
-      labels.push("");
-      continue;
+  const weekCount = Math.max(...cells.map((c) => c.weekIndex)) + 1;
+
+  // Map: monthIndex (0–11) -> weekIndex where day === 1
+  const monthToWeek = new Map<number, number>();
+
+  for (const cell of cells) {
+    const d = new Date(cell.date + "T00:00:00");
+    const day = d.getDate();
+    const month = d.getMonth();
+
+    // we only care about the 1st of the month
+    if (day === 1) {
+      // only take the first weekIndex we see for that month
+      if (!monthToWeek.has(month)) {
+        monthToWeek.set(month, cell.weekIndex);
+      }
     }
+  }
 
-    const date = new Date(firstDate);
-    date.setDate(date.getDate() + dayIndex);
+  const labels: string[] = Array(weekCount).fill("");
 
-    if (date.getDate() <= 7) {
-      labels.push(
-        date.toLocaleString(undefined, {
-          month: "short",
-        })
-      );
-    } else {
-      labels.push("");
-    }
+  // Place labels at the weekIndex where the 1st occurs
+  for (const [month, weekIndex] of monthToWeek.entries()) {
+    if (weekIndex < 0 || weekIndex >= weekCount) continue;
+    const d = new Date(2000, month, 1); // year doesn't matter for month name
+    labels[weekIndex] = d.toLocaleString(undefined, { month: "short" });
   }
 
   return labels;
@@ -271,9 +282,9 @@ function valueToColor(value: number | null, metric: MetricKey): string {
     return "#E5E7EB";
   }
 
-  const RED = "#EF4444";
-  const YELLOW = "#FACC15";
-  const GREEN = "#22C55E";
+  const RED = "#FF0026";
+  const YELLOW = "#FFDE00";
+  const GREEN = "#16EC06";
 
   if (metric === "recovery" || metric === "sleepPerformance") {
     if (value <= 33) return RED;
