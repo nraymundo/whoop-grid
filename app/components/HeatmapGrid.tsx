@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { DailyMetrics } from "../lib/types";
+import { motion, AnimatePresence } from "framer-motion";
 
 type MetricKey = "recovery" | "sleepPerformance" | "strain";
 
@@ -25,6 +26,7 @@ export function HeatmapGrid({
   showRangeControl,
 }: HeatmapGridProps) {
   const [mounted, setMounted] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<DailyMetrics | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -73,13 +75,14 @@ export function HeatmapGrid({
     raw: number | null;
     weekIndex: number;
     weekday: number;
+    full: DailyMetrics;
   };
 
   const cells: Cell[] = [];
 
-  sorted.forEach((date, i) => {
-    const iso = date.date;
-    const raw = (date[metric] as number | null) ?? null;
+  sorted.forEach((entry, i) => {
+    const iso = entry.date;
+    const raw = (entry[metric] as number | null) ?? null;
 
     let normalized: number | null = null;
     if (typeof raw === "number" && max > min) {
@@ -97,6 +100,7 @@ export function HeatmapGrid({
       raw,
       weekIndex,
       weekday,
+      full: entry, // 👈 keep the whole day record
     });
   });
 
@@ -181,20 +185,29 @@ export function HeatmapGrid({
                 Array.from({ length: 7 }).map((_, weekday) => {
                   const key = `${week}-${weekday}`;
                   const cell = cellMap.get(key);
+                  const isClickable = !!cell;
+
                   return (
-                    <div
+                    <button
                       key={key}
-                      className="rounded-sm"
+                      type="button"
+                      className="rounded-sm focus:outline-none focus:ring-2 focus:ring-white/60"
                       style={{
                         gridColumnStart: week + 1,
                         gridRowStart: weekday + 1,
                         backgroundColor: cell
                           ? valueToColor(cell.raw, metric)
                           : "#E5E7EB",
+                        cursor: isClickable ? "pointer" : "default",
                       }}
                       title={
                         cell ? tooltipForCell(cell, metric, unit) : "No data"
                       }
+                      onClick={() => {
+                        if (cell) {
+                          setSelectedDay(cell.full);
+                        }
+                      }}
                     />
                   );
                 })
@@ -234,7 +247,89 @@ export function HeatmapGrid({
             ))}
         <span>High</span>
       </div>
+
+      <AnimatePresence>
+        {selectedDay && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={() => setSelectedDay(null)} // close on backdrop click
+          >
+            <div
+              className="w-full max-w-sm rounded-lg bg-[#0b1418] p-4 text-sm text-white shadow-lg border border-white/10"
+              onClick={(e) => e.stopPropagation()} // prevent backdrop close
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-semibold">
+                  {new Date(selectedDay.date + "T00:00:00").toLocaleDateString(
+                    undefined,
+                    { month: "short", day: "numeric", year: "numeric" }
+                  )}
+                </h3>
+                <button
+                  type="button"
+                  className="text-xs text-[#b4b4b4] hover:text-white"
+                  onClick={() => setSelectedDay(null)}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                <MetricRow
+                  label="Recovery"
+                  value={selectedDay.recovery}
+                  unit="%"
+                />
+                <MetricRow
+                  label="Sleep performance"
+                  value={selectedDay.sleepPerformance}
+                  unit="%"
+                />
+                <MetricRow label="Strain" value={selectedDay.strain} />
+                <MetricRow
+                  label="Sleep hours"
+                  value={selectedDay.sleepHours ?? null}
+                  unit="h"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
+  );
+}
+
+function MetricRow({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: number | null;
+  unit?: string;
+}) {
+  const hasValue = typeof value === "number" && !Number.isNaN(value);
+
+  function formatValue(val: number) {
+    if (!unit) return val.toFixed(1);
+
+    if (unit === "h") {
+      const hours = Math.floor(val);
+      const minutes = Math.round((val - hours) * 60);
+      return `${hours}h ${minutes}m`;
+    }
+
+    return `${val.toFixed(1)}${unit}`;
+  }
+
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-[#b4b4b4]">{label}</span>
+      <span className="text-xs font-medium text-white">
+        {hasValue ? formatValue(value) : "no data"}
+      </span>
+    </div>
   );
 }
 

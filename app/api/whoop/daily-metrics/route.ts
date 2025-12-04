@@ -111,7 +111,6 @@ export async function GET(req: NextRequest) {
   ]);
 
   if (cycleRecords.length) {
-    console.log(cycleRecords[0]);
     const starts = cycleRecords
       .map((cycle) => cycle.start)
       .filter(Boolean)
@@ -158,12 +157,13 @@ export async function GET(req: NextRequest) {
     const duration =
       sleep?.score?.stage_summary?.total_in_bed_time_milli -
         sleep?.score?.stage_summary?.total_awake_time_milli || null;
+    console.log("duration", duration);
 
     if (typeof performance === "number") {
       metric.sleepPerformance = performance;
     }
     if (typeof duration === "number") {
-      metric.sleepHours = duration / 3600;
+      metric.sleepHours = duration / 3600000;
     }
   }
 

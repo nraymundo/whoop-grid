@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { HeatmapGrid } from "./components/HeatmapGrid";
 import { generateMockMetrics } from "./lib/mockData";
 import { DailyMetrics } from "./lib/types";
@@ -69,12 +70,14 @@ export default function HomePage() {
               {errorMsg && <p className="text-xs text-red-600">{errorMsg}</p>}
             </div>
 
-            <a
+            <motion.a
               href="/api/auth/whoop/login"
               className="shrink-0 inline-block rounded bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-80"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               Connect WHOOP
-            </a>
+            </motion.a>
           </div>
           {loading && (
             <p className="text-xs text-gray-500">Loading metrics from WHOOP…</p>
