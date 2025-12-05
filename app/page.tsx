@@ -6,8 +6,6 @@ import { HeatmapGrid } from "./components/HeatmapGrid";
 import { generateMockMetrics } from "./lib/mockData";
 import { DailyMetrics } from "./lib/types";
 
-// const RANGE_OPTIONS = [7, 30, 60];
-
 export default function HomePage() {
   const [data, setData] = useState<DailyMetrics[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +73,7 @@ export default function HomePage() {
               className="shrink-0 inline-block rounded bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-80"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              aria-disabled={true}
             >
               Connect WHOOP
             </motion.a>
