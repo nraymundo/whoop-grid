@@ -6,6 +6,8 @@ using GitHub-style calendar heatmaps.
 This app helps you quickly see trends in recovery, sleep, and strain over time
 in a format that is intuitive, compact, and easy to explore.
 
+https://whoop-grid.vercel.app
+
 ---
 
 ## Features
