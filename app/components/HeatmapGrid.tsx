@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { DailyMetrics } from "../lib/types";
 import { motion, AnimatePresence } from "framer-motion";
+import { band, BAND_COLOR } from "../lib/stats";
 
 type MetricKey = "recovery" | "sleepPerformance" | "strain";
 
@@ -25,27 +26,7 @@ export function HeatmapGrid({
   onRangeChange,
   showRangeControl,
 }: HeatmapGridProps) {
-  const [mounted, setMounted] = useState(false);
   const [selectedDay, setSelectedDay] = useState<DailyMetrics | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <section className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          {showRangeControl ? (
-            <span className="text-xs text-gray-500">Loading…</span>
-          ) : (
-            <span className="text-xs text-gray-500">Last {rangeDays} days</span>
-          )}
-        </div>
-      </section>
-    );
-  }
 
   if (data.length === 0) {
     return null;
@@ -116,9 +97,9 @@ export function HeatmapGrid({
   }
 
   return (
-    <section className="space-y-2">
+    <section className="rounded-[20px] border border-[#edeae4] bg-white px-[26px] py-[22px] space-y-2">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-xl font-semibold text-white">{title}</h2>
+        <h2 className="text-[15px] font-semibold text-[#2c2722]">{title}</h2>
 
         {/* {showRangeControl && onRangeChange && (
           <div className="flex items-center gap-2 text-xs text-[#b4b4b4]">
@@ -141,7 +122,7 @@ export function HeatmapGrid({
         <div style={{ width: 28 }} />
         <div className="flex-1">
           <div
-            className="grid gap-[2px] mx-auto text-[12px] text-[#b4b4b4] mb-1"
+            className="grid gap-[2px] mx-auto text-[12px] text-[#7c7368] mb-1"
             style={{
               gridTemplateColumns: `repeat(${weekCount}, 16px)`,
             }}
@@ -158,7 +139,7 @@ export function HeatmapGrid({
       {/* Weekday labels + heatmap grid */}
       <div className="flex gap-2">
         <div
-          className="grid gap-[2px] text-[12px] text-[#b4b4b4]"
+          className="grid gap-[2px] text-[12px] text-[#7c7368]"
           style={{
             width: 28,
             gridTemplateRows: "repeat(7, 16px)",
@@ -218,7 +199,7 @@ export function HeatmapGrid({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-1 text-[12px] text-[#b4b4b4]">
+      <div className="flex items-center gap-1 text-[12px] text-[#7c7368]">
         <span>Low</span>
         {metric === "strain"
           ? ["Low", "Mid", "High"].map((_, i) => (
@@ -251,11 +232,11 @@ export function HeatmapGrid({
       <AnimatePresence>
         {selectedDay && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#2c2722]/[.42]"
             onClick={() => setSelectedDay(null)} // close on backdrop click
           >
             <div
-              className="w-full max-w-sm rounded-lg bg-[#0b1418] p-4 text-sm text-white shadow-lg border border-white/10"
+              className="w-full max-w-sm rounded-2xl bg-[#fbfaf8] p-4 text-sm text-[#2c2722] shadow-2xl border border-[#edeae4]"
               onClick={(e) => e.stopPropagation()} // prevent backdrop close
             >
               <div className="flex items-center justify-between mb-2">
@@ -267,7 +248,7 @@ export function HeatmapGrid({
                 </h3>
                 <button
                   type="button"
-                  className="text-xs text-[#b4b4b4] hover:text-white"
+                  className="text-xs text-[#665e54] hover:text-[#2c2722]"
                   onClick={() => setSelectedDay(null)}
                 >
                   ✕
@@ -325,8 +306,8 @@ function MetricRow({
 
   return (
     <div className="flex items-center justify-between">
-      <span className="text-xs text-[#b4b4b4]">{label}</span>
-      <span className="text-xs font-medium text-white">
+      <span className="text-xs text-[#665e54]">{label}</span>
+      <span className="text-xs font-medium text-[#2c2722]">
         {hasValue ? formatValue(value) : "no data"}
       </span>
     </div>
@@ -373,27 +354,7 @@ function computeMonthLabelsFromCells(
 }
 
 function valueToColor(value: number | null, metric: MetricKey): string {
-  if (value === null || Number.isNaN(value)) {
-    return "#E5E7EB";
-  }
-
-  const RED = "#FF0026";
-  const YELLOW = "#FFDE00";
-  const GREEN = "#16EC06";
-
-  if (metric === "recovery" || metric === "sleepPerformance") {
-    if (value <= 33) return RED;
-    if (value <= 66) return YELLOW;
-    return GREEN;
-  }
-
-  if (metric === "strain") {
-    if (value <= 9) return RED;
-    if (value <= 14) return YELLOW;
-    return GREEN;
-  }
-
-  return "#CBD5E1";
+  return BAND_COLOR[band(value, metric)];
 }
 
 function tooltipForCell(
