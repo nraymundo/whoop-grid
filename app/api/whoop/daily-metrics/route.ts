@@ -33,8 +33,8 @@ export async function GET(req: NextRequest) {
     baseUrl: string,
     headers: Record<string, string>,
     label: string,
-    maxPages = 10
-  ) {
+    maxPages: number
+  ): Promise<{ records: any[]; rateLimited: boolean }> {
     let all: any[] = [];
     let page = 0;
     let nextToken: string | undefined;
@@ -47,7 +47,24 @@ export async function GET(req: NextRequest) {
         url.searchParams.set("nextToken", nextToken);
       }
 
-      const response = await fetch(url.toString(), { headers });
+      let response = await fetch(url.toString(), { headers });
+
+      // WHOOP rate-limits aggressively; retry a 429 a couple times with backoff
+      // instead of treating it as "no data".
+      for (let attempt = 0; response.status === 429 && attempt < 3; attempt++) {
+        const retryAfterSec = Number(response.headers.get("retry-after"));
+        const waitMs = Number.isFinite(retryAfterSec) && retryAfterSec > 0
+          ? retryAfterSec * 1000
+          : 500 * 2 ** attempt;
+        await new Promise((r) => setTimeout(r, waitMs));
+        response = await fetch(url.toString(), { headers });
+      }
+
+      if (response.status === 429) {
+        console.error(`[${label}] still rate-limited after retries`);
+        return { records: all, rateLimited: true };
+      }
+
       const raw = await response.text();
 
       let json: any;
@@ -76,7 +93,7 @@ export async function GET(req: NextRequest) {
       page += 1;
     }
 
-    return all;
+    return { records: all, rateLimited: false };
   }
 
   // --- Build URLs for all three endpoints ---
@@ -103,12 +120,48 @@ export async function GET(req: NextRequest) {
     Accept: "application/json",
   };
 
+  // WHOOP caps page size at 25; make sure we can page through a full year
+  // (one record/day) instead of silently truncating at an arbitrary limit.
+  const maxPages = Math.ceil(days / 25) + 2;
+
   // one helper, three endpoints (recovery, sleep, strain)
-  const [recoveryRecords, sleepRecords, cycleRecords] = await Promise.all([
-    fetchAllPaginated(recoveryBaseUrl, headers, "recovery"),
-    fetchAllPaginated(sleepBaseUrl, headers, "sleep"),
-    fetchAllPaginated(cycleBaseUrl, headers, "cycle"),
+  const [recovery, sleep, cycle] = await Promise.all([
+    fetchAllPaginated(recoveryBaseUrl, headers, "recovery", maxPages),
+    fetchAllPaginated(sleepBaseUrl, headers, "sleep", maxPages),
+    fetchAllPaginated(cycleBaseUrl, headers, "cycle", maxPages),
   ]);
+
+  if (recovery.rateLimited && sleep.rateLimited && cycle.rateLimited) {
+    return NextResponse.json(
+      {
+        error:
+          "WHOOP API rate limit hit before any data could be fetched. Try again in a moment.",
+      },
+      { status: 429 }
+    );
+  }
+
+  const recoveryRecords = recovery.records;
+  const sleepRecords = sleep.records;
+  const cycleRecords = cycle.records;
+
+  console.log(
+    `[daily-metrics] range ${startIso} -> ${endIso} | recovery=${recoveryRecords.length} sleep=${sleepRecords.length} cycle=${cycleRecords.length}`
+  );
+  if (recoveryRecords.length) {
+    console.log(
+      "[daily-metrics] recovery earliest/latest:",
+      recoveryRecords[recoveryRecords.length - 1]?.created_at,
+      recoveryRecords[0]?.created_at
+    );
+  }
+  if (cycleRecords.length) {
+    console.log(
+      "[daily-metrics] cycle earliest/latest:",
+      cycleRecords[cycleRecords.length - 1]?.start,
+      cycleRecords[0]?.start
+    );
+  }
 
   if (cycleRecords.length) {
     const starts = cycleRecords
