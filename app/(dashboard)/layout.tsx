@@ -77,7 +77,7 @@ export default function DashboardLayout({
   const yearMetrics = mounted
     ? (yearData ?? generateMockMetrics(YEAR_DAYS))
     : [];
-  const { readout, error: readoutError } = useReadout(yearMetrics);
+  const { readout, error: readoutError } = useReadout(yearMetrics, connected);
 
   if (!mounted) {
     return <main className="min-h-screen pb-[70px]" />;

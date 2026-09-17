@@ -40,8 +40,12 @@ function writeCache(entry: ReadoutCache) {
  * Fetches (and caches in localStorage) the AI-generated readout for a year of
  * WHOOP data. Shared by GridTab and InsightsTab so both tabs being mounted at
  * once doesn't trigger two concurrent calls or show different headlines.
+ *
+ * Only ever calls the API when `connected` is true. Mock/demo data uses
+ * Math.random() and is different on every render, which would otherwise
+ * defeat the cache and fire a real (billed) API call on every single load.
  */
-export function useReadout(yearData: DailyMetrics[]) {
+export function useReadout(yearData: DailyMetrics[], connected: boolean) {
   const [readout, setReadout] = useState<Readout | null>(null);
   const [error, setError] = useState(false);
 
@@ -52,6 +56,12 @@ export function useReadout(yearData: DailyMetrics[]) {
   const inputsStr = JSON.stringify(computeReadoutInputs(yearData));
 
   useEffect(() => {
+    if (!connected) {
+      setReadout(null);
+      setError(false);
+      return;
+    }
+
     const cached = readCache();
     // Guard against a stale cache entry saved before `paragraphs` existed.
     if (cached && cached.inputs === inputsStr && Array.isArray(cached.paragraphs)) {
@@ -85,7 +95,7 @@ export function useReadout(yearData: DailyMetrics[]) {
     return () => {
       cancelled = true;
     };
-  }, [inputsStr]);
+  }, [inputsStr, connected]);
 
   return { readout: readout ?? FALLBACK_READOUT, loaded: readout !== null, error };
 }
