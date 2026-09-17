@@ -2,7 +2,7 @@ import "./globals.css";
 import type { ReactNode } from "react";
 
 export const metadata = {
-  title: "WHOOP Daily Grid",
+  title: "Signal",
   description: "GitHub-style heatmaps for WHOOP recovery, sleep, and strain.",
   icons: {
     icon: "/favicon.svg",

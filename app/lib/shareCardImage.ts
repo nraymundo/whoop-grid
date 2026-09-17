@@ -103,8 +103,8 @@ export async function downloadShareCardPng(
   const titleY = cardY + INNER_PAD + 14;
   ctx.fillStyle = "#2c2722";
   ctx.font = "600 22px 'IBM Plex Sans', sans-serif";
-  ctx.fillText("Whoopty", contentX, titleY);
-  const titleWidth = ctx.measureText("Whoopty").width;
+  ctx.fillText("Signal", contentX, titleY);
+  const titleWidth = ctx.measureText("Signal").width;
 
   ctx.fillStyle = "#665e54";
   ctx.font = "400 15px 'IBM Plex Mono', monospace";
@@ -159,7 +159,7 @@ export async function downloadShareCardPng(
 
     ctx.fillStyle = "#665e54";
     ctx.font = "400 14px 'IBM Plex Mono', monospace";
-    const watermark = "whoopgrid.app";
+    const watermark = "signal.app";
     const wmWidth = ctx.measureText(watermark).width;
     ctx.fillText(watermark, cardX + cardW - INNER_PAD - wmWidth, statsY);
   }
@@ -172,7 +172,7 @@ export async function downloadShareCardPng(
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "whoop-grid-card.png";
+  a.download = "signal-card.png";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

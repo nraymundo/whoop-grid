@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
 Stats (last 30 days unless noted):
 - Nights under 6h sleep: ${inputs.nightsUnderSix}
 - Red recovery days: ${inputs.redRecoveryDays}
-- Recovery trend (last 21d vs prior 21d): ${inputs.recoveryTrend >= 0 ? "+" : ""}${inputs.recoveryTrend}%
-- Strain trend (last 21d vs prior 21d): ${inputs.strainTrend >= 0 ? "+" : ""}${inputs.strainTrend}
+- Recovery trend (last 15d vs prior 15d): ${inputs.recoveryTrend >= 0 ? "+" : ""}${inputs.recoveryTrend}%
+- Strain trend (last 15d vs prior 15d): ${inputs.strainTrend >= 0 ? "+" : ""}${inputs.strainTrend}
 - Average recovery: ${inputs.avgRecovery ?? "n/a"}%
 - Average strain: ${inputs.avgStrain ?? "n/a"}
 - Average sleep: ${inputs.avgSleepHours ?? "n/a"}h

@@ -15,11 +15,11 @@ export function InsightsTab({ data, readout, readoutError }: InsightsTabProps) {
     { k: "Nights under 6h", v: String(inputs.nightsUnderSix) },
     { k: "Red recovery days", v: String(inputs.redRecoveryDays) },
     {
-      k: "Strain trend, 21d",
+      k: "Strain trend, 15d",
       v: `${inputs.strainTrend >= 0 ? "+" : ""}${inputs.strainTrend}`,
     },
     {
-      k: "Recovery trend, 21d",
+      k: "Recovery trend, 15d",
       v: `${inputs.recoveryTrend >= 0 ? "+" : ""}${inputs.recoveryTrend}%`,
     },
   ];

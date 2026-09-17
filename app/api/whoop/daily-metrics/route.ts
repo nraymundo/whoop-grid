@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DailyMetrics } from "@/app/lib/types";
+import { refreshWhoopToken, setWhoopCookies, WhoopTokens } from "@/app/lib/whoopAuth";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export async function GET(req: NextRequest) {
-  const accessToken = req.cookies.get("whoop_access_token")?.value;
+  let accessToken = req.cookies.get("whoop_access_token")?.value;
+  const refreshToken = req.cookies.get("whoop_refresh_token")?.value;
+  let refreshedTokens: WhoopTokens | null = null;
+
+  // Access token cookie is gone (it expires after ~1hr) but we still have a
+  // refresh token (good for 30 days) — silently get a new access token
+  // instead of forcing the user to click "Connect WHOOP" again.
+  if (!accessToken && refreshToken) {
+    refreshedTokens = await refreshWhoopToken(refreshToken);
+    if (refreshedTokens) {
+      accessToken = refreshedTokens.accessToken;
+    }
+  }
 
   if (!accessToken) {
     return NextResponse.json(
@@ -132,13 +145,15 @@ export async function GET(req: NextRequest) {
   ]);
 
   if (recovery.rateLimited && sleep.rateLimited && cycle.rateLimited) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         error:
           "WHOOP API rate limit hit before any data could be fetched. Try again in a moment.",
       },
       { status: 429 }
     );
+    if (refreshedTokens) setWhoopCookies(response, refreshedTokens);
+    return response;
   }
 
   const recoveryRecords = recovery.records;
@@ -249,5 +264,7 @@ export async function GET(req: NextRequest) {
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  return NextResponse.json(daily);
+  const response = NextResponse.json(daily);
+  if (refreshedTokens) setWhoopCookies(response, refreshedTokens);
+  return response;
 }

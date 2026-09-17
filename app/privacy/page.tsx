@@ -8,7 +8,7 @@ export default function PrivacyPage() {
       </p>
 
       <p>
-        WHOOP Daily Grid ("the App") is a personal fitness data visualization
+        Signal ("the App") is a personal fitness data visualization
         project designed to help users understand their recovery, sleep, and
         activity trends using WHOOP data.
       </p>
