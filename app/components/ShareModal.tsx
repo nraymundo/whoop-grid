@@ -65,7 +65,7 @@ export function ShareModal({ onClose, data }: ShareModalProps) {
         >
           <div className="rounded-2xl border border-[#edeae4] bg-white p-[26px]">
             <div className="mb-5 flex items-baseline gap-2.5">
-              <span className="text-[13px] font-semibold">Whoopty</span>
+              <span className="text-[13px] font-semibold">Signal</span>
               <span className="font-mono text-[11.5px] text-[#665e54]">
                 Sep 2025 – Sep 2026
               </span>
@@ -98,7 +98,7 @@ export function ShareModal({ onClose, data }: ShareModalProps) {
                   </div>
                 </div>
                 <div className="ml-auto self-end font-mono text-[11.5px] text-[#665e54]">
-                  whoopgrid.app
+                  signal.app
                 </div>
               </div>
             )}
@@ -139,9 +139,6 @@ export function ShareModal({ onClose, data }: ShareModalProps) {
             className="rounded-full bg-[#2c2722] px-[19px] py-3 text-[13px] font-medium text-[#fbfaf8] hover:bg-[#463d35] disabled:cursor-default disabled:opacity-50"
           >
             {downloading ? "Preparing…" : "Download PNG"}
-          </button>
-          <button className="rounded-full border border-[#e2ded7] px-[19px] py-3 text-[13px] font-medium text-[#5d554c] hover:bg-[#f4f1ec]">
-            Copy link
           </button>
           <button
             onClick={() => setHideNumbers((v) => !v)}

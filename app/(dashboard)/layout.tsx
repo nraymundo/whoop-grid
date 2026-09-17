@@ -89,12 +89,9 @@ export default function DashboardLayout({
     <main className="min-h-screen pb-[70px]">
       <div className="mx-auto max-w-[1120px] px-7">
         <div className="flex flex-wrap items-center gap-4 py-[22px] pb-1">
-          <div className="mr-auto flex items-baseline gap-2.5">
-            <span className="text-base font-semibold tracking-[-.01em]">
-              Whoops
-            </span>
-            <span className="font-mono text-[11.5px] text-[#665e54]">
-              {!authChecked ? "syncing" : connected ? "synced" : "showing mock data"}
+          <div className="mr-auto flex items-center gap-2.5">
+            <span className="text-xl font-semibold tracking-[-.01em]">
+              Signal
             </span>
           </div>
 

@@ -1,6 +1,6 @@
 import { DailyMetrics } from "./types";
 
-const CACHE_KEY = "whoopgrid:whoop-data-cache";
+const CACHE_KEY = "signal:whoop-data-cache";
 // WHOOP data changes at most a few times a day (nightly recovery sync, cycle
 // updates after workouts) — no need to hit the API on every page load.
 const TTL_MS = 15 * 60 * 1000;

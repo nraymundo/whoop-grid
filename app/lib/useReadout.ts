@@ -15,7 +15,7 @@ export const FALLBACK_READOUT: Readout = {
   ],
 };
 
-const READOUT_CACHE_KEY = "whoopgrid:readout-cache";
+const READOUT_CACHE_KEY = "signal:readout-cache";
 
 type ReadoutCache = { inputs: string } & Readout;
 

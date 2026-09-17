@@ -1,4 +1,4 @@
-# WHOOP Grid
+# Signal
 
 A dashboard that visualizes WHOOP recovery, sleep, and activity data
 using GitHub-style calendar heatmaps.
@@ -34,7 +34,7 @@ https://whoop-grid.vercel.app
 
 **Effective Date:** 2025-12-02
 
-WHOOP Grid is a personal fitness data visualization project designed
+Signal is a personal fitness data visualization project designed
 to help users understand their recovery, sleep, and activity trends using WHOOP data.
 
 We take your privacy seriously.
